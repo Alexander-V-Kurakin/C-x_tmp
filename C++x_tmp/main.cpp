@@ -22,8 +22,7 @@ using namespace std;
 
 #define TRACE(x) (std::cout << #x << " = " << x << std::endl)
 
-int main(int argc, const char * argv[]) {
-    // insert code here...
+void header() {
     char *cp = const_cast<char*>( "Hello, World!\n" );
     std::cout << cp << std::endl;
     // __cplusplus: This preprocessor macro provides a numeric value indicating
@@ -33,36 +32,61 @@ int main(int argc, const char * argv[]) {
 //    TRACE(__clang_version__);
     std::cout << "__cplusplus\t\t\t" << __cplusplus << std::endl;
     std::cout << "__clang_version__\t" << __clang_version__ << std::endl << std::endl;
-    
-    string in_file_name( "any_file_name" ), out_file_name( "any_file_name" );
+}
+
+void do_operation( int a, int b, int ( *op )( int, int )) {
+    cout << op( a, b ) << endl;
+}
+
+int main(int argc, const char * argv[]) {
+    // insert code here...
+    header();
     
     {
-        try {
-            ofstream out_file_stream( out_file_name );
+        // 1. Since C++14 the leading () can be omitted if no parameters used.
+        // The last () mean the lambda expression is called, no parameters used.
+        [](){ cout << "Hello from lambda expression!" << endl; } ();
+        []{ cout << "Hello from lambda expression!" << endl; } ();
         
-            if ( !out_file_stream.is_open())
-                throw runtime_error( "File " + out_file_name + " is not opened / created" );
-            
-            out_file_stream << cp;
-            
-            ifstream in_file_stream( in_file_name );
-            
-            if ( !in_file_stream.is_open())
-                throw runtime_error( "File " + in_file_name + " is not opened" );
-            
-            in_file_stream >> cp;
-            
-            cout << cp;
-        }
-        catch ( runtime_error& e ) {
-            cerr << "runtime error: " << e.what() << endl;
-            return 1;
-        }
+        // 2. Named lambda expression.
+        auto hello {[](){ cout << "Hello from named lambda expression!" <<  endl; }};
+        hello();
+        hello();    // is called as usual function.
         
-        // The file stream automatically be closed once out of scope.
+        // 3. Parameterized lambda expression.
+        auto print {[]( const string& text ) { cout << text << endl; }};
+        print( "Hello from named lambda expression!" );
+        print( "Goodbye from named lambda expression!" );
+        []( const string& text ) { cout << text << endl; } ( "Hello from non-named lambda expression!" );
+        
+        // 4. Return of value of lambda expression.
+        auto sum {[]( int a, int b ) { return a + b; }};
+//        auto sum {[]( int a, int b ) -> int { return a + b; }};     // with return type
+        cout << sum( 1, 2 ) << endl;
+        int s = sum( 3, 4 );            // or int s{ sum( 3, 4 )};
+        cout << s << endl;
+        
+        // 5. Lambda expression as function parameter.
+        auto subtract {[]( int a, int b ) { return a - b; }};
+        do_operation( 5, 6, sum );
+        do_operation( 8, 7, subtract );
+        do_operation( 2, 3, []( int a, int b ) { return a * b; });  // Lambda expression direct usage
+        
+        // 6. Generic (universal) lambda expression.
+        auto add_2 = []( auto a, auto b ) { return a + b; };
+        auto print_2 = []( const auto& value ) { cout << value << endl; };
+     
+        cout << add_2( 2, 3 ) << endl;              // sum of int
+        cout << add_2( 2.2, 3.4 ) << endl;          // sum of double
+     
+        string hello_2{ "Hello from "};
+        string lambda{ "lambda expression!" };
+        cout << add_2( hello_2, lambda ) << endl;   // string concatenation
+        
+        print_2( "Hello from lambda expression!" );
+        print_2( 1 );
+        print_2( 123.4567 );
     }
-    
-    remove( out_file_name.c_str());     // Only required once, same file name used.
     
     return 0;
 }
